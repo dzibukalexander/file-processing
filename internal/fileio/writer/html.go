@@ -2,9 +2,6 @@ package writer
 
 import (
 	"os"
-	"strings"
-
-	"github.com/dzibukalexander/file-processing/internal/fileio/constants"
 )
 
 type HTMLWriter struct{}
@@ -14,8 +11,5 @@ type HTMLWriter struct{}
 //	directory and other users can only read it.
 //	Suitable for public text files.
 func (h *HTMLWriter) Write(filePath string, data []byte) error {
-	ext := strings.ToLower(string(constants.HTML))
-	basePath := strings.TrimSuffix(filePath, "."+ext)
-	outputPath := basePath + "." + ext
-	return os.WriteFile(outputPath, data, 0644)
+	return os.WriteFile(filePath, data, 0644)
 }

@@ -3,9 +3,6 @@ package writer
 import (
 	"encoding/json"
 	"os"
-	"strings"
-
-	"github.com/dzibukalexander/file-processing/internal/fileio/constants"
 )
 
 type JSONWriter struct{}
@@ -20,10 +17,5 @@ func (w *JSONWriter) Write(filePath string, data []byte) error {
 	if err := json.Unmarshal(data, &temp); err != nil {
 		return err
 	}
-
-	ext := strings.ToLower(string(constants.JSON))
-	basePath := strings.TrimSuffix(filePath, "."+ext)
-	outputPath := basePath + "." + ext
-
-	return os.WriteFile(outputPath, data, 0644)
+	return os.WriteFile(filePath, data, 0644)
 }
