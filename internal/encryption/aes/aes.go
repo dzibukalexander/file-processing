@@ -4,7 +4,9 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"fmt"
 	"io"
+	"io/ioutil"
 )
 
 type AESEncryptor struct{}
@@ -45,4 +47,12 @@ func (d *AESDecryptor) Decrypt(data []byte, key []byte) ([]byte, error) {
 	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
 
 	return gcm.Open(nil, nonce, ciphertext, nil)
+}
+
+func (e *AESEncryptor) GenerateKey(path string) error {
+	key := make([]byte, 32) // AES-256
+	if _, err := io.ReadFull(rand.Reader, key); err != nil {
+		return fmt.Errorf("failed to generate AES key: %w", err)
+	}
+	return ioutil.WriteFile(path, key, 0600)
 }

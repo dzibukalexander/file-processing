@@ -21,31 +21,35 @@ type FileIO interface {
 }
 
 func NewFileReader(fileType constants.FileType) FileReader {
+	var r FileReader
 	switch fileType {
 	case constants.TEXT:
-		return &reader.TextReader{}
+		r = &reader.TextReader{}
 	case constants.JSON:
-		return &reader.JSONReader{}
+		r = &reader.JSONReader{}
 	case constants.YAML:
-		return &reader.YAMLReader{}
+		r = &reader.YAMLReader{}
 	case constants.HTML:
-		return &reader.HTMLReader{}
+		r = &reader.HTMLReader{}
 	default:
-		return &reader.TextReader{}
+		r = &reader.TextReader{}
 	}
+	return NewLoggingFileReader(r)
 }
 
 func NewWriter(fileType constants.FileType) FileWriter {
+	var w FileWriter
 	switch fileType {
 	case constants.JSON:
-		return &writer.JSONWriter{}
+		w = &writer.JSONWriter{}
 	case constants.XML:
-		return &writer.XMLWriter{}
+		w = &writer.XMLWriter{}
 	case constants.YAML:
-		return &writer.YAMLWriter{}
+		w = &writer.YAMLWriter{}
 	case constants.HTML:
-		return &writer.HTMLWriter{}
+		w = &writer.HTMLWriter{}
 	default:
-		return &writer.TextWriter{}
+		w = &writer.TextWriter{}
 	}
+	return NewLoggingFileWriter(w)
 }

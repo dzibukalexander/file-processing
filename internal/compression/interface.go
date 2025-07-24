@@ -16,23 +16,27 @@ type Decompressor interface {
 }
 
 func NewCompressor(compType CompressionType) Compressor {
+	var compressor Compressor
 	switch compType {
 	case GZIP:
-		return &gzip.GzipCompressor{}
+		compressor = &gzip.GzipCompressor{}
 	case ZIP:
-		return &zip.ZipCompressor{}
+		compressor = &zip.ZipCompressor{}
 	default:
 		return nil
 	}
+	return NewLoggingCompressor(compressor)
 }
 
 func NewDecompressor(compType CompressionType) Decompressor {
+	var decompressor Decompressor
 	switch compType {
 	case GZIP:
-		return &gzip.GzipDecompressor{}
+		decompressor = &gzip.GzipDecompressor{}
 	case ZIP:
-		return &zip.ZipDecompressor{}
+		decompressor = &zip.ZipDecompressor{}
 	default:
 		return nil
 	}
+	return NewLoggingDecompressor(decompressor)
 }

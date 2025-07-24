@@ -16,24 +16,27 @@ type Decryptor interface {
 }
 
 func NewEncryptor(encType EncryptionType) Encryptor {
+	var encryptor Encryptor
 	switch encType {
-
 	case AES:
-		return &aes.AESEncryptor{}
+		encryptor = &aes.AESEncryptor{}
 	case RSA:
-		return &rsa.RSAEncryptor{}
+		encryptor = &rsa.RSAEncryptor{}
 	default:
 		return nil
 	}
+	return NewLoggingEncryptor(encryptor)
 }
 
 func NewDecryptor(encType EncryptionType) Decryptor {
+	var decryptor Decryptor
 	switch encType {
 	case AES:
-		return &aes.AESDecryptor{}
+		decryptor = &aes.AESDecryptor{}
 	case RSA:
-		return &rsa.RSADecryptor{}
+		decryptor = &rsa.RSADecryptor{}
 	default:
 		return nil
 	}
+	return NewLoggingDecryptor(decryptor)
 }

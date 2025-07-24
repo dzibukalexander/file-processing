@@ -12,12 +12,14 @@ type Calculator interface {
 }
 
 func NewCalculator(method constants.CalculationMethod) Calculator {
+	var calculator Calculator
 	switch method {
 	case constants.PARSER:
-		return &parser.ParserCalculator{}
+		calculator = &parser.ParserCalculator{}
 	case constants.LIBRARY:
-		return &library.LibraryCalculator{}
+		calculator = &library.LibraryCalculator{}
 	default:
-		return &regex.RegexCalculator{}
+		calculator = &regex.RegexCalculator{}
 	}
+	return NewLoggingCalculator(calculator)
 }
