@@ -7,7 +7,8 @@ import (
 
 	"github.com/dzibukalexander/file-processing/internal/config"
 	"github.com/dzibukalexander/file-processing/internal/logger"
-	"github.com/stretchr/testify/assert"
+	"github.com/ozontech/allure-go/pkg/framework/provider"
+	"github.com/ozontech/allure-go/pkg/framework/runner"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -37,46 +38,51 @@ func setupLoggingTest() *bytes.Buffer {
 
 	logOutput := new(bytes.Buffer)
 	logger.GetInstance().SetOutput(logOutput)
-	// Resetting the output is handled by each test
 	return logOutput
 }
 
 func TestLoggingCompressor(t *testing.T) {
-	logOutput := setupLoggingTest()
-	originalOutput := logger.GetInstance().Out
-	defer logger.GetInstance().SetOutput(originalOutput)
+	runner.Run(t, "LoggingCompressor", func(t provider.T) {
+		t.WithNewStep("success path", func(s provider.StepCtx) {
+			logOutput := setupLoggingTest()
+			origOut := logger.GetInstance().Out
+			defer logger.GetInstance().SetOutput(origOut)
 
-	mockComp := new(MockCompressor)
+			mockComp := new(MockCompressor)
+			input := []byte("data")
+			mockComp.On("Compress", input).Return([]byte("compressed"), nil)
 
-	input := []byte("data")
-	mockComp.On("Compress", input).Return([]byte("compressed"), nil)
+			loggingComp := NewLoggingCompressor(mockComp)
+			_, err := loggingComp.Compress(input)
 
-	loggingComp := NewLoggingCompressor(mockComp)
-	_, err := loggingComp.Compress(input)
-
-	assert.NoError(t, err)
-	assert.Contains(t, logOutput.String(), "Starting compression")
-	assert.Contains(t, logOutput.String(), "Compression finished")
-	mockComp.AssertExpectations(t)
+			s.Assert().NoError(err)
+			s.Assert().Contains(logOutput.String(), "Starting compression")
+			s.Assert().Contains(logOutput.String(), "Compression finished")
+			mockComp.AssertExpectations(t)
+		})
+	})
 }
 
 func TestLoggingDecompressor_Error(t *testing.T) {
-	logOutput := setupLoggingTest()
-	originalOutput := logger.GetInstance().Out
-	defer logger.GetInstance().SetOutput(originalOutput)
+	runner.Run(t, "LoggingDecompressor", func(t provider.T) {
+		t.WithNewStep("error path", func(s provider.StepCtx) {
+			logOutput := setupLoggingTest()
+			origOut := logger.GetInstance().Out
+			defer logger.GetInstance().SetOutput(origOut)
 
-	mockDecomp := new(MockDecompressor)
+			mockDecomp := new(MockDecompressor)
+			input := []byte("data")
+			expectedErr := errors.New("decompression error")
+			mockDecomp.On("Decompress", input).Return([]byte(nil), expectedErr)
 
-	input := []byte("data")
-	expectedErr := errors.New("decompression error")
-	mockDecomp.On("Decompress", input).Return([]byte(nil), expectedErr)
+			loggingDecomp := NewLoggingDecompressor(mockDecomp)
+			_, err := loggingDecomp.Decompress(input)
 
-	loggingDecomp := NewLoggingDecompressor(mockDecomp)
-	_, err := loggingDecomp.Decompress(input)
-
-	assert.Error(t, err)
-	assert.Equal(t, expectedErr, err)
-	assert.Contains(t, logOutput.String(), "Starting decompression")
-	assert.Contains(t, logOutput.String(), "Decompression failed")
-	mockDecomp.AssertExpectations(t)
+			s.Assert().Error(err)
+			s.Assert().Equal(expectedErr, err)
+			s.Assert().Contains(logOutput.String(), "Starting decompression")
+			s.Assert().Contains(logOutput.String(), "Decompression failed")
+			mockDecomp.AssertExpectations(t)
+		})
+	})
 }

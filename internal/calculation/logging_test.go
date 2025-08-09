@@ -7,7 +7,8 @@ import (
 
 	"github.com/dzibukalexander/file-processing/internal/config"
 	"github.com/dzibukalexander/file-processing/internal/logger"
-	"github.com/stretchr/testify/assert"
+	"github.com/ozontech/allure-go/pkg/framework/provider"
+	"github.com/ozontech/allure-go/pkg/framework/runner"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -28,53 +29,51 @@ func setupLoggingTest() (*MockCalculator, *bytes.Buffer) {
 	mockCalc := new(MockCalculator)
 	logOutput := new(bytes.Buffer)
 	logger.GetInstance().SetOutput(logOutput)
-	// No defer to reset, as each test should control its logger state.
-
 	return mockCalc, logOutput
 }
 
 func TestLoggingCalculator_Success(t *testing.T) {
-	// Setup
-	mockCalc, logOutput := setupLoggingTest()
-	originalOutput := logger.GetInstance().Out
-	defer logger.GetInstance().SetOutput(originalOutput)
+	runner.Run(t, "LoggingCalculator success", func(t provider.T) {
+		t.WithNewStep("success path", func(s provider.StepCtx) {
+			mockCalc, logOutput := setupLoggingTest()
+			origOut := logger.GetInstance().Out
+			defer logger.GetInstance().SetOutput(origOut)
 
-	// Expectations
-	input := "2 + 2"
-	expectedResult := "4"
-	mockCalc.On("Calculate", input).Return(expectedResult, nil)
+			input := "2 + 2"
+			expectedResult := "4"
+			mockCalc.On("Calculate", input).Return(expectedResult, nil)
 
-	// Execution
-	loggingCalc := NewLoggingCalculator(mockCalc)
-	result, err := loggingCalc.Calculate(input)
+			loggingCalc := NewLoggingCalculator(mockCalc)
+			result, err := loggingCalc.Calculate(input)
 
-	// Assertions
-	assert.NoError(t, err)
-	assert.Equal(t, expectedResult, result)
-	assert.Contains(t, logOutput.String(), "Starting calculation")
-	assert.Contains(t, logOutput.String(), "Calculation finished")
-	mockCalc.AssertExpectations(t)
+			s.Assert().NoError(err)
+			s.Assert().Equal(expectedResult, result)
+			s.Assert().Contains(logOutput.String(), "Starting calculation")
+			s.Assert().Contains(logOutput.String(), "Calculation finished")
+			mockCalc.AssertExpectations(t)
+		})
+	})
 }
 
 func TestLoggingCalculator_Error(t *testing.T) {
-	// Setup
-	mockCalc, logOutput := setupLoggingTest()
-	originalOutput := logger.GetInstance().Out
-	defer logger.GetInstance().SetOutput(originalOutput)
+	runner.Run(t, "LoggingCalculator error", func(t provider.T) {
+		t.WithNewStep("error path", func(s provider.StepCtx) {
+			mockCalc, logOutput := setupLoggingTest()
+			origOut := logger.GetInstance().Out
+			defer logger.GetInstance().SetOutput(origOut)
 
-	// Expectations
-	input := "invalid"
-	expectedError := errors.New("calculation error")
-	mockCalc.On("Calculate", input).Return("", expectedError)
+			input := "invalid"
+			expectedError := errors.New("calculation error")
+			mockCalc.On("Calculate", input).Return("", expectedError)
 
-	// Execution
-	loggingCalc := NewLoggingCalculator(mockCalc)
-	_, err := loggingCalc.Calculate(input)
+			loggingCalc := NewLoggingCalculator(mockCalc)
+			_, err := loggingCalc.Calculate(input)
 
-	// Assertions
-	assert.Error(t, err)
-	assert.Equal(t, expectedError, err)
-	assert.Contains(t, logOutput.String(), "Starting calculation")
-	assert.Contains(t, logOutput.String(), "Calculation failed")
-	mockCalc.AssertExpectations(t)
+			s.Assert().Error(err)
+			s.Assert().Equal(expectedError, err)
+			s.Assert().Contains(logOutput.String(), "Starting calculation")
+			s.Assert().Contains(logOutput.String(), "Calculation failed")
+			mockCalc.AssertExpectations(t)
+		})
+	})
 }

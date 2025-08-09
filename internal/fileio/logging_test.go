@@ -7,7 +7,8 @@ import (
 
 	"github.com/dzibukalexander/file-processing/internal/config"
 	"github.com/dzibukalexander/file-processing/internal/logger"
-	"github.com/stretchr/testify/assert"
+	"github.com/ozontech/allure-go/pkg/framework/provider"
+	"github.com/ozontech/allure-go/pkg/framework/runner"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -41,42 +42,48 @@ func setupLoggingTest() *bytes.Buffer {
 }
 
 func TestLoggingFileReader(t *testing.T) {
-	logOutput := setupLoggingTest()
-	originalOutput := logger.GetInstance().Out
-	defer logger.GetInstance().SetOutput(originalOutput)
+	runner.Run(t, "LoggingFileReader", func(t provider.T) {
+		t.WithNewStep("success path", func(s provider.StepCtx) {
+			logOutput := setupLoggingTest()
+			origOut := logger.GetInstance().Out
+			defer logger.GetInstance().SetOutput(origOut)
 
-	mockReader := new(MockFileReader)
+			mockReader := new(MockFileReader)
+			path := "file.txt"
+			mockReader.On("Read", path).Return([]byte("content"), nil)
 
-	path := "file.txt"
-	mockReader.On("Read", path).Return([]byte("content"), nil)
+			loggingReader := NewLoggingFileReader(mockReader)
+			_, err := loggingReader.Read(path)
 
-	loggingReader := NewLoggingFileReader(mockReader)
-	_, err := loggingReader.Read(path)
-
-	assert.NoError(t, err)
-	assert.Contains(t, logOutput.String(), "Starting file read")
-	assert.Contains(t, logOutput.String(), "File read finished")
-	mockReader.AssertExpectations(t)
+			s.Assert().NoError(err)
+			s.Assert().Contains(logOutput.String(), "Starting file read")
+			s.Assert().Contains(logOutput.String(), "File read finished")
+			mockReader.AssertExpectations(t)
+		})
+	})
 }
 
 func TestLoggingFileWriter_Error(t *testing.T) {
-	logOutput := setupLoggingTest()
-	originalOutput := logger.GetInstance().Out
-	defer logger.GetInstance().SetOutput(originalOutput)
+	runner.Run(t, "LoggingFileWriter", func(t provider.T) {
+		t.WithNewStep("error path", func(s provider.StepCtx) {
+			logOutput := setupLoggingTest()
+			origOut := logger.GetInstance().Out
+			defer logger.GetInstance().SetOutput(origOut)
 
-	mockWriter := new(MockFileWriter)
+			mockWriter := new(MockFileWriter)
+			path := "file.txt"
+			data := []byte("content")
+			expectedErr := errors.New("write error")
+			mockWriter.On("Write", path, data).Return(expectedErr)
 
-	path := "file.txt"
-	data := []byte("content")
-	expectedErr := errors.New("write error")
-	mockWriter.On("Write", path, data).Return(expectedErr)
+			loggingWriter := NewLoggingFileWriter(mockWriter)
+			err := loggingWriter.Write(path, data)
 
-	loggingWriter := NewLoggingFileWriter(mockWriter)
-	err := loggingWriter.Write(path, data)
-
-	assert.Error(t, err)
-	assert.Equal(t, expectedErr, err)
-	assert.Contains(t, logOutput.String(), "Starting file write")
-	assert.Contains(t, logOutput.String(), "File write failed")
-	mockWriter.AssertExpectations(t)
+			s.Assert().Error(err)
+			s.Assert().Equal(expectedErr, err)
+			s.Assert().Contains(logOutput.String(), "Starting file write")
+			s.Assert().Contains(logOutput.String(), "File write failed")
+			mockWriter.AssertExpectations(t)
+		})
+	})
 }

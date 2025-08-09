@@ -4,10 +4,14 @@ go 1.24.1
 
 require (
 	github.com/Knetic/govaluate v3.0.0+incompatible
+	github.com/ozontech/allure-go/pkg/framework v0.6.33
 	github.com/sirupsen/logrus v1.9.3
 )
 
 require (
+	github.com/google/uuid v1.3.0 // indirect
+	github.com/ozontech/allure-go/pkg/allure v0.6.14 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
 )

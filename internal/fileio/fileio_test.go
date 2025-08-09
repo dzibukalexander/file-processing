@@ -7,13 +7,15 @@ import (
 	"testing"
 
 	"github.com/dzibukalexander/file-processing/internal/fileio/constants"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/ozontech/allure-go/pkg/framework/provider"
+	"github.com/ozontech/allure-go/pkg/framework/runner"
 )
 
 func setupTest(t *testing.T) (string, func()) {
 	tempDir, err := ioutil.TempDir("", "fileio-test")
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatalf("temp dir: %v", err)
+	}
 	cleanup := func() { os.RemoveAll(tempDir) }
 	return tempDir, cleanup
 }
@@ -31,25 +33,23 @@ func TestFileIO_ReadWrite(t *testing.T) {
 		{constants.HTML, []byte(`<h1>hello html</h1>`), "test.html"},
 	}
 
-	for _, tc := range testCases {
-		t.Run(string(tc.fileType), func(t *testing.T) {
+	runner.Run(t, "FileIO Read/Write", func(at provider.T) {
+		for _, tc := range testCases {
+			tc := tc
 			tempDir, cleanup := setupTest(t)
 			defer cleanup()
 
-			filePath := filepath.Join(tempDir, tc.filename)
+			at.WithNewStep(string(tc.fileType), func(s provider.StepCtx) {
+				filePath := filepath.Join(tempDir, tc.filename)
 
-			writer := NewWriter(tc.fileType)
-			err := writer.Write(filePath, tc.data)
-			require.NoError(t, err)
+				writer := NewWriter(tc.fileType)
+				s.Require().NoError(writer.Write(filePath, tc.data))
 
-			reader := NewFileReader(tc.fileType)
-			readData, err := reader.Read(filePath)
-			require.NoError(t, err)
-
-			// YAML and JSON writers/readers might slightly reformat, so we do a content-wise check
-			// For simplicity here, we'll stick to direct byte comparison.
-			// In a real-world scenario, you might unmarshal and compare the structures.
-			assert.Equal(t, tc.data, readData)
-		})
-	}
+				reader := NewFileReader(tc.fileType)
+				readData, err := reader.Read(filePath)
+				s.Require().NoError(err)
+				s.Assert().Equal(tc.data, readData)
+			})
+		}
+	})
 }

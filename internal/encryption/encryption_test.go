@@ -8,76 +8,86 @@ import (
 
 	"github.com/dzibukalexander/file-processing/internal/encryption/aes"
 	"github.com/dzibukalexander/file-processing/internal/encryption/rsa"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/ozontech/allure-go/pkg/framework/provider"
+	"github.com/ozontech/allure-go/pkg/framework/runner"
 )
 
 func setupTest(t *testing.T) (string, func()) {
 	tempDir, err := ioutil.TempDir("", "encryption-test")
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatalf("temp dir: %v", err)
+	}
 	cleanup := func() { os.RemoveAll(tempDir) }
 	return tempDir, cleanup
 }
 
 func TestAESEncryptDecrypt(t *testing.T) {
-	encryptor := &aes.AESEncryptor{}
-	decryptor := &aes.AESDecryptor{}
-	originalData := []byte("hello aes")
-	key := make([]byte, 32)
+	runner.Run(t, "AES encrypt/decrypt", func(t provider.T) {
+		t.WithNewStep("roundtrip", func(s provider.StepCtx) {
+			encryptor := &aes.AESEncryptor{}
+			decryptor := &aes.AESDecryptor{}
+			originalData := []byte("hello aes")
+			key := make([]byte, 32)
 
-	encrypted, err := encryptor.Encrypt(originalData, key)
-	require.NoError(t, err)
+			encrypted, err := encryptor.Encrypt(originalData, key)
+			s.Require().NoError(err)
 
-	decrypted, err := decryptor.Decrypt(encrypted, key)
-	require.NoError(t, err)
-
-	assert.Equal(t, originalData, decrypted)
+			decrypted, err := decryptor.Decrypt(encrypted, key)
+			s.Require().NoError(err)
+			s.Assert().Equal(originalData, decrypted)
+		})
+	})
 }
 
 func TestRSAEncryptDecrypt(t *testing.T) {
 	tempDir, cleanup := setupTest(t)
 	defer cleanup()
 
-	keyPath := filepath.Join(tempDir, "rsa_key")
-	encryptor := &rsa.RSAEncryptor{}
-	decryptor := &rsa.RSADecryptor{}
+	runner.Run(t, "RSA encrypt/decrypt", func(t provider.T) {
+		t.WithNewStep("roundtrip", func(s provider.StepCtx) {
+			keyPath := filepath.Join(tempDir, "rsa_key")
+			encryptor := &rsa.RSAEncryptor{}
+			decryptor := &rsa.RSADecryptor{}
 
-	require.NoError(t, encryptor.GenerateKey(keyPath))
+			s.Require().NoError(encryptor.GenerateKey(keyPath))
 
-	pubKey, err := ioutil.ReadFile(keyPath + ".pub")
-	require.NoError(t, err)
-	privKey, err := ioutil.ReadFile(keyPath + ".priv")
-	require.NoError(t, err)
+			pubKey, err := ioutil.ReadFile(keyPath + ".pub")
+			s.Require().NoError(err)
+			privKey, err := ioutil.ReadFile(keyPath + ".priv")
+			s.Require().NoError(err)
 
-	originalData := []byte("hello rsa")
-	encrypted, err := encryptor.Encrypt(originalData, pubKey)
-	require.NoError(t, err)
+			originalData := []byte("hello rsa")
+			encrypted, err := encryptor.Encrypt(originalData, pubKey)
+			s.Require().NoError(err)
 
-	decrypted, err := decryptor.Decrypt(encrypted, privKey)
-	require.NoError(t, err)
-
-	assert.Equal(t, originalData, decrypted)
+			decrypted, err := decryptor.Decrypt(encrypted, privKey)
+			s.Require().NoError(err)
+			s.Assert().Equal(originalData, decrypted)
+		})
+	})
 }
 
 func TestKeyGeneration(t *testing.T) {
 	tempDir, cleanup := setupTest(t)
 	defer cleanup()
 
-	// Test AES key generation
-	aesKeyPath := filepath.Join(tempDir, "aes.key")
-	aesGen := &aes.AESEncryptor{}
-	err := aesGen.GenerateKey(aesKeyPath)
-	require.NoError(t, err)
-	_, err = os.Stat(aesKeyPath)
-	assert.NoError(t, err)
+	runner.Run(t, "Key generation", func(t provider.T) {
+		t.WithNewStep("AES and RSA", func(s provider.StepCtx) {
+			// AES
+			aesKeyPath := filepath.Join(tempDir, "aes.key")
+			aesGen := &aes.AESEncryptor{}
+			s.Require().NoError(aesGen.GenerateKey(aesKeyPath))
+			_, err := os.Stat(aesKeyPath)
+			s.Assert().NoError(err)
 
-	// Test RSA key generation
-	rsaKeyPath := filepath.Join(tempDir, "rsa_key")
-	rsaGen := &rsa.RSAEncryptor{}
-	err = rsaGen.GenerateKey(rsaKeyPath)
-	require.NoError(t, err)
-	_, err = os.Stat(rsaKeyPath + ".pub")
-	assert.NoError(t, err)
-	_, err = os.Stat(rsaKeyPath + ".priv")
-	assert.NoError(t, err)
+			// RSA
+			rsaKeyPath := filepath.Join(tempDir, "rsa_key")
+			rsaGen := &rsa.RSAEncryptor{}
+			s.Require().NoError(rsaGen.GenerateKey(rsaKeyPath))
+			_, err = os.Stat(rsaKeyPath + ".pub")
+			s.Assert().NoError(err)
+			_, err = os.Stat(rsaKeyPath + ".priv")
+			s.Assert().NoError(err)
+		})
+	})
 }
