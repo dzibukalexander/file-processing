@@ -1,0 +1,5 @@
+# Allure
+allure-results/
+allure-report/
+**/allure-results/
+**/allure-report/
